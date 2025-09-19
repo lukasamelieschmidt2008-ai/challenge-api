@@ -27,31 +27,35 @@ export default async function handler(req, res) {
     const totalMinutes =
       (Number(userHours) || 0) * 60 + (Number(userMinutes) || 0);
 
-    // Prompt bauen, mit "None" als neutral
     const prompt = `
-Du bist ein Challenge-Generator. Deine Aufgabe ist es, eine logische, realistische und machbare Challenge zu erstellen.
-Alle Eingaben sind gesetzt. Wenn eine Eingabe "None" ist, behandle sie neutral (also als keine Einschränkung oder freie Wahl).
+Du bist ein Challenge-Generator. Deine Aufgabe ist es, eine klare, kurze und realistische Challenge zu erstellen. 
+ALLE Eingaben sind bereits vorhanden. 
+Wenn eine Eingabe "None" lautet, behandle sie als neutral (also freie Wahl oder ohne Einschränkung). 
+WICHTIG: Fordere niemals zusätzliche Eingaben an. Antworte IMMER nur mit einer Challenge.
 
-Bedingungen:
-- Maximale Dauer: ${totalMinutes} Minuten.
-- Stimmung (Mood): ${userMood}.
-- Intensität: ${userIntensity}.
-- Einschränkungen: ${userDisabilityImpact}.
-- Kategorie: ${userCategories}.
-- Ziel: ${userGoal}.
-- Personenanzahl: ${userPersons}.
-- Alter: ${userAge}.
-- Ort: ${userLocation}.
+Eingaben des Users:
+- Dauer (maximal): ${totalMinutes} Minuten
+- Stimmung: ${userMood}
+- Intensität: ${userIntensity}
+- Einschränkungen: ${userDisabilityImpact}
+- Kategorie: ${userCategories}
+- Ziel: ${userGoal}
+- Personenanzahl: ${userPersons}
+- Alter: ${userAge}
+- Ort: ${userLocation}
 
 Regeln:
-1. Die Challenge muss in der angegebenen Zeit machbar sein.
-2. Berücksichtige Stimmung, Intensität und Einschränkungen passend.
-3. Kategorie, Ziel, Personenanzahl, Alter und Ort müssen eingehalten werden (außer sie sind "None").
-4. Keine unmöglichen oder widersprüchlichen Aufgaben (z. B. 100 km rennen in 5 Minuten, draußen wenn "Inside" angegeben ist).
-5. Formuliere die Challenge als kurzen, klaren Satz.
-6. Antworte nur mit der Challenge, ohne Erklärungen.
+1. Die Challenge darf die Zeit von ${totalMinutes} Minuten nicht überschreiten.
+2. Die Challenge muss realistisch und durchführbar sein.
+3. Wenn "None" angegeben ist, bedeutet das neutral – benutze eine beliebige passende Option, aber frag nicht nach Infos.
+4. Keine unmöglichen oder widersprüchlichen Aufgaben (z. B. 100 km laufen in 5 Minuten, draußen wenn "Inside").
+5. Antworte nur mit der Challenge als kurzem, klaren Satz.
 
-Gib nur die Challenge zurück.
+Beispiele:
+- Eingaben: Mood=Happy, Intensity=Low, Time=5 Minuten, Location=Inside → Antwort: "Tanze für 5 Minuten zu deinem Lieblingslied im Zimmer."
+- Eingaben: Mood=Sad, Intensity=Medium, Time=10 Minuten, Goal=Relaxation → Antwort: "Mach eine 10-minütige Atemübung mit ruhiger Musik."
+
+Jetzt generiere die Challenge für die obigen Eingaben:
 `;
 
     const response = await client.chat.completions.create({
