@@ -23,9 +23,9 @@ export default async function handler(req, res) {
     // Zeitlimit berechnen
     const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
 
-    // Prompt bauen (auf Englisch, wie du wolltest)
+    // Prompt bauen, None-Werte sauber behandeln
     const prompt = `
-Create one short and creative challenge based on the following inputs:
+Create a creative challenge based on the following inputs:
 ${userMood !== "None" ? `- Mood: ${userMood}` : ""}
 ${userIntensity !== "None" ? `- Intensity: ${userIntensity}` : ""}
 ${userDisabilityImpact !== "None" ? `- Disability Impact: ${userDisabilityImpact}` : ""}
@@ -34,26 +34,31 @@ ${userGoal !== "None" ? `- Goal: ${userGoal}` : ""}
 ${userPersons !== "None" ? `- Participants: ${userPersons}` : ""}
 ${userAge !== "None" ? `- Age: ${userAge}` : ""}
 ${userLocation !== "None" ? `- Location: ${userLocation}` : ""}
-- Time Limit: ${totalMinutes} minutes
+- Time limit: ${totalMinutes} minutes
 
-Important:
-- Return ONLY the challenge text itself.
-- Do not include labels, brackets, JSON, or formatting.
-`;
+Return only the challenge text, nothing else. Do not include "{challenge: ...}" or JSON formatting.
+    `;
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a creative challenge generator. Respond ONLY with the challenge text, nothing else." },
+        { role: "system", content: "You are a creative challenge generator. Respond only with the challenge text." },
         { role: "user", content: prompt }
       ],
       max_tokens: 200,
       temperature: 0.9
     });
 
-    const challengeText = response.choices[0].message.content.trim();
+    // Rohtext holen
+    const challengeTextRaw = response.choices[0].message.content.trim();
+
+    // Falls doch "{challenge: ...}" vorkommt → rausfiltern
+    const challengeText = challengeTextRaw
+      .replace(/^\{?challenge:\s*/i, "")
+      .replace(/\}$/i, "")
+      .trim();
 
     res.status(200).json({ challenge: challengeText });
   } catch (error) {
