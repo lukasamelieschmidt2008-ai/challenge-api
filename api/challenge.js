@@ -19,26 +19,27 @@ export default async function handler(req, res) {
       userMinutes = 0
     } = req.body;
 
+    const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
+
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     // GPT-Prompt
     const prompt = `
 Du bist ein kreativer Challenge-Generator. Erstelle eine Aufgabe basierend auf den folgenden Angaben:
 
-- Stimmung: ${userMood}
-- Intensität: ${userIntensity}
-- Beeinträchtigung: ${userDisabilityImpact}
-- Kategorie: ${userCategories}
-- Ziel: ${userGoal}
-- Personenanzahl: ${userPersons}
-- Alter: ${userAge}
-- Ort: ${userLocation}
-- Zeitlimit: ${userHours}h ${userMinutes}min
+- Stimmung: ${userMood !== "None" ? userMood : "beliebig"}
+- Intensität: ${userIntensity !== "None" ? userIntensity : "mittel"}
+- Beeinträchtigung: ${userDisabilityImpact !== "None" ? userDisabilityImpact : "keine"}
+- Kategorie: ${userCategories !== "None" ? userCategories : "offen"}
+- Ziel: ${userGoal !== "None" ? userGoal : "offen"}
+- Personenanzahl: ${userPersons !== "None" ? userPersons : "beliebig"}
+- Alter: ${userAge !== "Any" ? userAge : "alle Altersgruppen"}
+- Ort: ${userLocation !== "Any" ? userLocation : "beliebig"}
+- Zeitlimit: ${totalMinutes} Minuten
 
 ⚠️ WICHTIG:
-- Wenn ein Wert "None" oder "Any" ist, ignoriere ihn nicht als Fehler, sondern wähle ein neutrales, offenes Ziel oder Konzept.
-- Die Aufgabe muss innerhalb der angegebenen Zeit machbar sein.
-- Antworte nur mit der Aufgabe, keine Einleitung oder Extra-Texte.
+- Die Aufgabe muss in der angegebenen Zeit machbar sein.
+- Antworte **nur** mit der Aufgabe, ohne Einleitung oder Extra-Texte.
 - Kurz, klar, realistisch.
 `;
 
