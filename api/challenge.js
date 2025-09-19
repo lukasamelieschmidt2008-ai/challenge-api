@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
   // Build English prompt
   const prompt = `
-Create a creative challenge based on the following user input:
+Generate ONE short and actionable challenge based on the following input:
 - Mood: ${mood}
 - Intensity: ${intensity}
 - Disability Impact: ${disability}
@@ -46,23 +46,26 @@ Create a creative challenge based on the following user input:
 - Location: ${location}
 - Time limit: ${timeLimit}
 
-Please generate a short, actionable challenge that fits these parameters.
+Rules:
+- Respond ONLY with a JSON object in the format: {"challenge": "text here"} 
+- The challenge text must be max. 3 sentences.
+- Do not include objectives, bullet points, or extra explanations.
 `;
 
   try {
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a creative challenge generator. Respond only with the challenge text." },
+        { role: "system", content: "You are a strict JSON challenge generator. Always respond only with JSON." },
         { role: "user", content: prompt }
       ],
-      max_tokens: 200,
-      temperature: 0.9
+      max_tokens: 150,
+      temperature: 0.8
     });
 
-    const challengeText = response.choices[0]?.message?.content || "⚠️ No challenge generated";
+    const challengeText = response.choices[0]?.message?.content || '{"challenge": "⚠️ No challenge generated"}';
 
-    res.status(200).json({ challenge: challengeText });
+    res.status(200).json(JSON.parse(challengeText));
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "OpenAI request failed" });
