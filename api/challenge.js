@@ -44,7 +44,7 @@ Important:
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const response = await client.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: "gpt-3.5-turbo",
       messages: [
         { role: "system", content: "You are a creative challenge generator. Reply only with the challenge text." },
         { role: "user", content: prompt }
