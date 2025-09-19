@@ -6,7 +6,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Werte aus dem Body auslesen und Standardwerte setzen
     const {
       userMood = "Neutral",
       userIntensity = "Medium",
@@ -20,30 +19,32 @@ export default async function handler(req, res) {
       userMinutes = 5
     } = req.body;
 
-    // Gesamtzeit in Minuten berechnen
     const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
 
-    // Prompt bauen – None-Werte sauber behandeln
-    let prompt = `You are a creative challenge generator.
-Create **one short, actionable challenge** that can be realistically completed in ${totalMinutes} minutes.
-Follow these rules strictly:
-- Only include inputs that are not "None".
-- Include Mood: ${userMood !== "None" ? userMood : "any"}.
-- Include Intensity: ${userIntensity !== "None" ? userIntensity : "any"}.
-- Include Disability Impact: ${userDisabilityImpact !== "None" ? userDisabilityImpact : "any"}.
-- Include Category: ${userCategories !== "None" ? userCategories : "any"}.
-- Include Goal: ${userGoal !== "None" ? userGoal : "any"}.
-- Participants: ${userPersons !== "None" ? userPersons : "any"}.
-- Age: ${userAge !== "None" ? userAge : "any"}.
-- Location: ${userLocation !== "None" ? userLocation : "any"}.
-- Only generate the challenge text itself. Do not include any JSON formatting or extra labels.`;
+    const prompt = `
+You are a creative challenge generator.
+Create **one short, actionable challenge** that can be **completed in exactly ${totalMinutes} minutes**.
+Include only the following parameters if they are not "None":
+- Mood: ${userMood !== "None" ? userMood : "any"}
+- Intensity: ${userIntensity !== "None" ? userIntensity : "any"}
+- Disability Impact: ${userDisabilityImpact !== "None" ? userDisabilityImpact : "any"}
+- Category: ${userCategories !== "None" ? userCategories : "any"}
+- Goal: ${userGoal !== "None" ? userGoal : "any"}
+- Participants: ${userPersons !== "None" ? userPersons : "any"}
+- Age: ${userAge !== "None" ? userAge : "any"}
+- Location: ${userLocation !== "None" ? userLocation : "any"}
+
+⚠️ Important: The challenge **must be exactly ${totalMinutes} minutes long**. 
+Do not round up or down. 
+Do not include any extra labels or JSON formatting. Only return the challenge text.
+`;
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a concise, creative challenge generator." },
+        { role: "system", content: "You are a concise, precise challenge generator." },
         { role: "user", content: prompt }
       ],
       max_tokens: 200,
