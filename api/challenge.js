@@ -1,4 +1,3 @@
-// File: api/challenge.js
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -7,10 +6,11 @@ const client = new OpenAI({
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST requests allowed" });
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
+    // States aus FlutterFlow
     const {
       userMood,
       userIntensity,
@@ -24,10 +24,27 @@ export default async function handler(req, res) {
       userMinutes,
     } = req.body;
 
+    // Debug: Ausgabe ins Log
+    console.log("📥 Eingaben empfangen:", {
+      userMood,
+      userIntensity,
+      userDisabilityImpact,
+      userCategories,
+      userGoal,
+      userPersons,
+      userAge,
+      userLocation,
+      userHours,
+      userMinutes,
+    });
+
+    // Dauer berechnen
     const totalMinutes =
-      (Number(userHours) || 0) * 60 + (Number(userMinutes) || 0);
-    
-const prompt = `
+      (parseInt(userHours, 10) || 0) * 60 + (parseInt(userMinutes, 10) || 0);
+
+    console.log("⏱️ Berechnete Dauer (Minuten):", totalMinutes);
+
+    const prompt = `
 Du bist ein Challenge-Generator. 
 Erstelle GENAU EINE Challenge, die zu den Eingaben passt. 
 Alle Eingaben sind verbindlich. 
@@ -55,18 +72,20 @@ Regeln:
 {challenge: "…"}
 `;
 
-    const response = await client.chat.completions.create({
+    // GPT Call
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 200,
-      temperature: 0.6,
+      temperature: 0.7,
     });
 
-    const challenge = response.choices[0].message.content.trim();
+    const challengeText = completion.choices[0].message.content;
 
-    return res.status(200).json({ challenge });
+    console.log("✅ GPT Antwort:", challengeText);
+
+    return res.status(200).json({ challenge: challengeText });
   } catch (error) {
-    console.error("Challenge API error:", error);
-    return res.status(500).json({ error: "Server error" });
+    console.error("❌ Fehler im Handler:", error);
+    return res.status(500).json({ error: "Server error", details: error.message });
   }
 }
