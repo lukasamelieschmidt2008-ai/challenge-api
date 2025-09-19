@@ -1,71 +1,69 @@
+// File: api/challenge.js
 import OpenAI from "openai";
+
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Only POST allowed" });
+    return res.status(405).json({ error: "Only POST requests allowed" });
   }
 
   try {
-    // Werte aus dem Body auslesen mit Defaults
     const {
-      userMood = "Neutral",
-      userIntensity = "Medium",
-      userDisabilityImpact = "None",
-      userCategories = "None",
-      userGoal = "None",
-      userPersons = "Solo",
-      userAge = "Any",
-      userLocation = "Any",
-      userHours = 0,
-      userMinutes = 0
+      userMood,
+      userIntensity,
+      userDisabilityImpact,
+      userCategories,
+      userGoal,
+      userPersons,
+      userAge,
+      userLocation,
+      userHours,
+      userMinutes,
     } = req.body;
 
     // Zeitlimit in Minuten berechnen
-    const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
+    const totalMinutes = (Number(userHours) || 0) * 60 + (Number(userMinutes) || 0);
 
-    // Prompt zusammenbauen, None/Any-Werte sauber ignorieren
-    const promptLines = [];
-    if (userMood !== "None") promptLines.push(`- Mood: ${userMood}`);
-    if (userIntensity !== "None") promptLines.push(`- Intensity: ${userIntensity}`);
-    if (userDisabilityImpact !== "None") promptLines.push(`- Disability Impact: ${userDisabilityImpact}`);
-    if (userCategories !== "None") promptLines.push(`- Category: ${userCategories}`);
-    if (userGoal !== "None") promptLines.push(`- Goal: ${userGoal}`);
-    if (userPersons !== "None") promptLines.push(`- Participants: ${userPersons}`);
-    if (userAge !== "Any") promptLines.push(`- Age: ${userAge}`);
-    if (userLocation !== "Any") promptLines.push(`- Location: ${userLocation}`);
-    promptLines.push(`- Duration: ${totalMinutes} minutes`);
-
+    // Prompt bauen
     const prompt = `
-Create a single, short, realistic challenge based on the following inputs:
-${promptLines.join("\n")}
+Du bist ein Challenge-Generator. Deine Aufgabe ist es, eine logische, realistische und machbare Challenge zu erstellen.
+Halte dich strikt an die Bedingungen des Users.
 
-Important:
-- Only create a challenge that can realistically be completed within the given duration and location.
-- Reply **only with the challenge text**, no JSON, no labels, no extra formatting.
-- Keep it concise, clear, and actionable.
-`;
+Bedingungen:
+- Dauer: maximal ${totalMinutes} Minuten (nicht länger!).
+- Stimmung (Mood): ${userMood}.
+- Intensität: ${userIntensity}.
+- Einschränkungen: ${userDisabilityImpact}.
+- Kategorie: ${userCategories}.
+- Ziel: ${userGoal}.
+- Personenanzahl: ${userPersons}.
+- Alter: ${userAge}.
+- Ort: ${userLocation}.
 
-    // OpenAI-Client initialisieren
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+Regeln:
+- Die Challenge muss realistisch in der angegebenen Zeit machbar sein.
+- Kein Widerspruch (z.B. keine Outdoor-Aufgaben, wenn "Inside" gewählt wurde).
+- Keine unmöglichen Aufgaben (z.B. "100 km rennen" bei 5 Minuten).
+- Schreibe die Challenge als kurzen, klaren Satz.
 
-    // Chat Completion anfordern
+Gib nur die Challenge zurück, ohne Erklärungen.
+    `;
+
     const response = await client.chat.completions.create({
-      model: "gpt-4.1-nano",
-      messages: [
-        { role: "system", content: "You are a creative challenge generator. Reply only with the challenge text." },
-        { role: "user", content: prompt }
-      ],
-      max_tokens: 250,
-      temperature: 0.9
+      model: "gpt-4o-mini", // günstig & stark, du kannst auch andere Modelle testen
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 200,
+      temperature: 0.7,
     });
 
-    // Challenge aus der Antwort extrahieren
-    const challengeText = response.choices[0].message.content.trim();
+    const challenge = response.choices[0].message.content.trim();
 
-    res.status(200).json({ challenge: challengeText });
-
+    return res.status(200).json({ challenge });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
+    console.error("Challenge API error:", error);
+    return res.status(500).json({ error: "Server error" });
   }
 }
