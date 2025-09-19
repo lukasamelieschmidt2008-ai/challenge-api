@@ -28,13 +28,11 @@ export default async function handler(req, res) {
       (Number(userHours) || 0) * 60 + (Number(userMinutes) || 0);
     
 const prompt = `
-Du bist ein Challenge-Generator. Deine Aufgabe ist es, eine klare, kurze und realistische Challenge zu erstellen.
-ALLE Eingaben sind vorhanden. 
-Wenn eine Eingabe "None" lautet, behandle sie neutral (freie Wahl). 
-WICHTIG: Antworte IMMER nur mit einer Challenge, niemals mit Nachfragen oder Erklärungen.
+Du bist ein Challenge-Generator. 
+Erstelle GENAU EINE Challenge, die zu den Eingaben passt. 
+Alle Eingaben sind verbindlich. 
 
 Eingaben:
-- Dauer: maximal ${totalMinutes} Minuten
 - Stimmung: ${userMood}
 - Intensität: ${userIntensity}
 - Einschränkungen: ${userDisabilityImpact}
@@ -43,34 +41,19 @@ Eingaben:
 - Personenanzahl: ${userPersons}
 - Alter: ${userAge}
 - Ort: ${userLocation}
+- Dauer: ${totalMinutes} Minuten
 
-Feste Regeln:
-1. Die Challenge MUSS in ${totalMinutes} Minuten machbar sein (nicht länger, nicht kürzer als 1 Minute).
-2. Die Kategorie MUSS exakt eingehalten werden:
-   - Mobility = Bewegungsaufgabe (Stretching, leichte Aktivität, Balance).
-   - Fitness = Training.
-   - Mind = mentale Übung.
-   - Creative = kreatives Gestalten.
-   - Digital = digitale Aktivität.
-   - Social = Interaktion.
-   - Self-Care = Pflege, Erholung.
-   - Nature = Bezug zur Natur.
-   - Mission = kleine konkrete Aufgabe.
-   - Learning = etwas Neues lernen.
-   - None = freie Wahl.
-3. Das Ziel ${userGoal} MUSS berücksichtigt werden (Relaxation = beruhigende, entspannende Variante).
-4. Stimmung + Intensität bestimmen die Ausprägung (Neutral + Medium = moderat, nicht zu leicht, nicht zu schwer).
-5. Ort & Personenanzahl sind verpflichtend (Outside + Group = draußen in einer Gruppe).
-6. KEINE Atemübungen oder reinen Denkaufgaben, wenn Kategorie ≠ "Mind".
-7. Antworte nur mit EINEM klaren Satz für die Challenge.
-
-Beispiele:
-- Mood=Neutral, Intensity=Medium, Category=Mobility, Goal=Relaxation, Time=10min, Outside, Group → "Trefft euch draußen im Kreis und macht gemeinsam 10 Minuten lang sanfte Dehnübungen im Stehen."
-- Mood=Happy, Intensity=High, Category=Fitness, Time=15min, Inside → "Macht 3 Runden á 10 Liegestütze, 10 Sit-ups und 10 Hampelmänner."
-- Mood=Sad, Intensity=Low, Category=Self-Care, Time=5min, Inside → "Setz dich bequem hin und höre für 5 Minuten beruhigende Musik."
+Regeln:
+1. Die Challenge dauert exakt ${totalMinutes} Minuten. Nicht mehr, nicht weniger.
+2. Benutze genau die Kategorie ${userCategories}. Keine andere.
+3. Die Personenanzahl ist ${userPersons}. Passe die Aufgabe daran an.
+4. Einschränkungen (${userDisabilityImpact}) müssen beachtet werden.
+5. Intensität ${userIntensity} muss klar spürbar sein.
+6. Ort (${userLocation}) muss berücksichtigt werden.
+7. Stimmung (${userMood}) soll in der Formulierung erkennbar sein.
+8. Antworte nur im Format:
+{challenge: "…"}
 `;
-
-
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
