@@ -50,7 +50,7 @@ Important:
 
     // Chat Completion anfordern
     const response = await client.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini",
       messages: [
         { role: "system", content: "You are a creative challenge generator. Reply only with the challenge text." },
         { role: "user", content: prompt }
