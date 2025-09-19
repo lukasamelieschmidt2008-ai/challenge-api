@@ -1,9 +1,8 @@
 {
   "name": "challenge-api",
   "version": "1.0.0",
-  "main": "api/challenge.js",
   "type": "module",
-  "scripts": {
-    "start": "node api/challenge.js"
+  "dependencies": {
+    "openai": "^4.0.0"
   }
 }

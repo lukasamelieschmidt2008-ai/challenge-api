@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/challenge.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/challenge", "dest": "/api/challenge.js" }
+  ]
+}
