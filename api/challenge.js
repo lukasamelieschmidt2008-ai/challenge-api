@@ -6,10 +6,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Werte aus Request Body
+    // Body auslesen und Defaults setzen
     const {
-      userMood = "Neutral",
-      userIntensity = "Medium",
+      userMood = "None",
+      userIntensity = "None",
       userDisabilityImpact = "None",
       userCategories = "None",
       userGoal = "None",
@@ -20,43 +20,41 @@ export default async function handler(req, res) {
       userMinutes = 0
     } = req.body;
 
-    // Zeitlimit berechnen
+    // Zeitlimit in Minuten
     const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
 
     // Prompt bauen
     const prompt = `
-You are a creative challenge generator. Always follow these strict rules:
+You are a creative challenge generator. Generate a single challenge based on the inputs below.
+Always follow these rules:
 
-Inputs for the challenge:
-${userMood !== "None" ? `- Mood: ${userMood}` : ""}
-${userIntensity !== "None" ? `- Intensity: ${userIntensity}` : ""}
-${userDisabilityImpact !== "None" ? `- Disability Impact: ${userDisabilityImpact}` : ""}
-${userCategories !== "None" ? `- Category: ${userCategories}` : ""}
-${userGoal !== "None" ? `- Goal: ${userGoal}` : ""}
-${userPersons !== "None" ? `- Participants: ${userPersons}` : ""}
-${userAge !== "None" ? `- Age: ${userAge}` : ""}
-${userLocation !== "None" ? `- Location: ${userLocation}` : ""}
-- Time Limit: ${totalMinutes} minutes
+- Do NOT ask for missing inputs. Treat "None" as "no restriction".
+- The challenge must be fully doable in ${totalMinutes} minutes or less.
+- Consider all inputs and integrate them into the challenge.
+- Output ONLY the challenge text. Do NOT include JSON, labels, or explanations.
+- Keep it short, clear, and actionable.
 
-Rules:
-1. ALWAYS respect the time limit: the entire challenge must be fully doable within ${totalMinutes} minutes (not longer).
-2. ALWAYS consider all inputs above. If an input is "None", treat it as "no specific restriction".
-3. The output must be ONE clear, creative challenge that matches the given context.
-4. Do not explain yourself, do not repeat the inputs.
-5. Output ONLY the challenge text, nothing else (no JSON, no labels, no keys).
+Inputs:
+Mood: ${userMood}
+Intensity: ${userIntensity}
+Disability Impact: ${userDisabilityImpact}
+Category: ${userCategories}
+Goal: ${userGoal}
+Participants: ${userPersons}
+Age: ${userAge}
+Location: ${userLocation}
+Time Limit: ${totalMinutes} minutes
 `.trim();
 
-    // OpenAI-Client
+    // OpenAI Client
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // Anfrage an GPT
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content:
-            "You are a creative challenge generator. Respond only with the challenge text itself."
+          content: "You are a creative challenge generator. Respond ONLY with the challenge text."
         },
         { role: "user", content: prompt }
       ],
