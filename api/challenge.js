@@ -1,10 +1,4 @@
-// api/challenge.js
-
 import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -12,61 +6,55 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Werte aus dem Body auslesen
     const {
-      userMood,
-      userIntensity,
-      userDisabilityImpact,
-      userCategories,
-      userGoal,
-      userPersons,
-      userAge,
-      userLocation,
-      userHours,
-      userMinutes,
+      userMood = "Neutral",
+      userIntensity = "Medium",
+      userDisabilityImpact = "None",
+      userCategories = "None",
+      userGoal = "None",
+      userPersons = "Solo",
+      userAge = "Any",
+      userLocation = "Any",
+      userHours = 0,
+      userMinutes = 0
     } = req.body;
 
-    // Fallbacks (z. B. wenn keine Zeit angegeben wird → 0)
-    const hours = parseInt(userHours) || 0;
-    const minutes = parseInt(userMinutes) || 0;
-    const timeLimit = `${hours}h ${minutes}min`;
+    // Zeitlimit berechnen
+    const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
 
+    // Prompt bauen, None-Werte sauber behandeln
     const prompt = `
-You are an assistant that generates ONE short, fun, and actionable challenge.
+Erstelle eine kreative Challenge basierend auf diesen Angaben:
+${userMood !== "None" ? `- Stimmung: ${userMood}` : ""}
+${userIntensity !== "None" ? `- Intensität: ${userIntensity}` : ""}
+${userDisabilityImpact !== "None" ? `- Beeinträchtigung: ${userDisabilityImpact}` : ""}
+${userCategories !== "None" ? `- Kategorie: ${userCategories}` : ""}
+${userGoal !== "None" ? `- Ziel: ${userGoal}` : ""}
+${userPersons !== "None" ? `- Personenanzahl: ${userPersons}` : ""}
+${userAge !== "None" ? `- Alter: ${userAge}` : ""}
+${userLocation !== "None" ? `- Ort: ${userLocation}` : ""}
+- Zeitlimit: ${totalMinutes} Minuten
 
-Here are the fixed parameters (do not reinterpret, change, or ignore them):
-- Mood: "${userMood}"
-- Intensity: "${userIntensity}"
-- Disability Impact: "${userDisabilityImpact}"
-- Category: "${userCategories}"
-- Goal: "${userGoal}"
-- Persons: "${userPersons}"
-- Age group: "${userAge}"
-- Location: "${userLocation}"
-- Time limit: EXACTLY "${timeLimit}" (do not change, shorten, or extend this)
+Gib nur eine kurze Challenge aus, die in dieser Zeit machbar ist.`;
+    
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-STRICT RULES:
-1. Use the provided values EXACTLY as written (do not translate or rephrase them).
-2. The challenge MUST fit inside the exact time limit "${timeLimit}".
-3. The challenge must be doable given the parameters (location, persons, disability impact, etc.).
-4. Output ONLY a valid JSON object in this format:
-   {"challenge": "your text here"}
-5. The challenge text must be max. 3 sentences.
-6. No lists, no bullet points, no extra explanation, only the challenge.
-
-Now generate the challenge:
-`;
-
-    const completion = await client.chat.completions.create({
+    const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.8,
+      messages: [
+        { role: "system", content: "Du bist ein kreativer Challenge-Generator. Antworte nur mit der Aufgabe." },
+        { role: "user", content: prompt }
+      ],
+      max_tokens: 200,
+      temperature: 0.9
     });
 
-    const challengeText = completion.choices[0].message.content.trim();
+    const challengeText = response.choices[0].message.content;
 
-    return res.status(200).json({ challenge: challengeText });
+    res.status(200).json({ challenge: challengeText });
   } catch (error) {
-    console.error("API Error:", error);
-    return res.status(500).json({ error: "Failed to generate challenge" });
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
   }
 }
