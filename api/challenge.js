@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Werte aus Body auslesen, Default-Werte setzen
+    // Werte aus dem Body auslesen und Standardwerte setzen
     const {
       userMood = "Neutral",
       userIntensity = "Medium",
@@ -20,36 +20,34 @@ export default async function handler(req, res) {
       userMinutes = 0
     } = req.body;
 
-    // Zeitlimit in Minuten berechnen (robust gegen Strings oder invalid values)
-    const totalMinutes = (() => {
-      const hours = parseInt(userHours) || 0;
-      const minutes = parseInt(userMinutes) || 0;
-      return hours * 60 + minutes;
-    })();
+    // Zeitlimit in Minuten berechnen
+    const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
 
-    // Prompt bauen, None-Werte ignorieren
-    const promptLines = [];
-    if (userMood !== "None") promptLines.push(`- Mood: ${userMood}`);
-    if (userIntensity !== "None") promptLines.push(`- Intensity: ${userIntensity}`);
-    if (userDisabilityImpact !== "None") promptLines.push(`- Disability Impact: ${userDisabilityImpact}`);
-    if (userCategories !== "None") promptLines.push(`- Category: ${userCategories}`);
-    if (userGoal !== "None") promptLines.push(`- Goal: ${userGoal}`);
-    if (userPersons !== "None") promptLines.push(`- Participants: ${userPersons}`);
-    if (userAge !== "None") promptLines.push(`- Age: ${userAge}`);
-    if (userLocation !== "None") promptLines.push(`- Location: ${userLocation}`);
-    promptLines.push(`- Duration: ${totalMinutes} minutes`);
+    // Prompt für GPT bauen
+    let prompt = `Create a single, actionable challenge based on the following details:\n`;
 
-    const prompt = `You are a creative challenge generator. Generate **one concise challenge** in English that exactly fits the given parameters. Include any relevant instructions, and ensure the challenge is feasible within the duration. Only output the challenge text, do not include any JSON or extra labels. Here are the parameters:\n${promptLines.join("\n")}`;
+    if (userMood !== "None") prompt += `- Mood: ${userMood}\n`;
+    if (userIntensity !== "None") prompt += `- Intensity: ${userIntensity}\n`;
+    if (userDisabilityImpact !== "None") prompt += `- Disability Impact: ${userDisabilityImpact}\n`;
+    if (userCategories !== "None") prompt += `- Category: ${userCategories}\n`;
+    if (userGoal !== "None") prompt += `- Goal: ${userGoal}\n`;
+    if (userPersons !== "None") prompt += `- Participants: ${userPersons}\n`;
+    if (userAge !== "Any") prompt += `- Age: ${userAge}\n`;
+    if (userLocation !== "Any") prompt += `- Location: ${userLocation}\n`;
 
+    prompt += `- Time Limit: ${totalMinutes} minutes\n\n`;
+    prompt += `Instructions: Only output a single challenge. The challenge must be feasible within the given time limit and location. Do not include labels like "challenge:" or JSON formatting. Keep it short, clear, and actionable.`;
+
+    // OpenAI Client
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a creative challenge generator." },
+        { role: "system", content: "You are a creative challenge generator. Output only one challenge that can be completed based on the provided details." },
         { role: "user", content: prompt }
       ],
-      max_tokens: 250,
+      max_tokens: 200,
       temperature: 0.9
     });
 
