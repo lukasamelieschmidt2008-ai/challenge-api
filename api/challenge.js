@@ -6,7 +6,6 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: "Only POST allowed" });
     }
 
-    // Werte aus dem Body
     const {
       userMood,
       userIntensity,
@@ -20,14 +19,10 @@ export default async function handler(req, res) {
       userMinutes
     } = req.body;
 
-    // OpenAI-Client mit Key aus Environment
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // Optimierter Prompt für GPT
     const prompt = `
-Du bist ein kreativer Challenge-Generator. 
-Erstelle eine Aufgabe, die genau zu den folgenden Angaben passt und **in der angegebenen Zeit machbar ist**. 
-Antworte **nur mit der Aufgabe**, ohne Einleitung oder Extra-Text.
+Du bist ein kreativer Challenge-Generator. Erstelle eine Aufgabe basierend auf den folgenden Angaben:
 
 - Stimmung: ${userMood}
 - Intensität: ${userIntensity}
@@ -37,16 +32,15 @@ Antworte **nur mit der Aufgabe**, ohne Einleitung oder Extra-Text.
 - Personenanzahl: ${userPersons}
 - Alter: ${userAge}
 - Ort: ${userLocation}
-- Zeitlimit: ${userHours} Stunden ${userMinutes} Minuten
+- Zeitlimit: ${userHours}h ${userMinutes}min
 
-⚠️ Wichtige Hinweise:
-1. Die Aufgabe darf **nicht länger dauern** als die angegebene Zeit.
-2. Wenn die Aufgabe mehrere Personen beinhaltet, muss sie innerhalb der Zeit machbar sein, **ohne dass sich jemand extra treffen muss**.
-3. Formuliere die Aufgabe kurz, klar und realistisch.
-4. Antworte nur mit einem Satz oder maximal 2 kurzen Absätzen.
+⚠️ WICHTIG:
+- Wenn ein Wert "None" oder "Any" ist, ignoriere ihn und wähle einen neutralen oder allgemeinen Wert.
+- Aufgabe muss innerhalb der angegebenen Zeit machbar sein.
+- Antworte nur mit der Aufgabe, keine Einleitung, keine Extra-Texte.
+- Kurz, klar, realistisch.
 `;
 
-    // GPT-Request
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -57,10 +51,8 @@ Antworte **nur mit der Aufgabe**, ohne Einleitung oder Extra-Text.
       temperature: 0.9
     });
 
-    // Antwort auslesen
     const challengeText = response.choices[0].message.content;
 
-    // JSON zurückgeben
     res.status(200).json({ challenge: challengeText });
 
   } catch (error) {
