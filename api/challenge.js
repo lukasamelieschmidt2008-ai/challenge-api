@@ -33,7 +33,7 @@ ALLE Eingaben sind vorhanden.
 Wenn eine Eingabe "None" lautet, behandle sie neutral (freie Wahl). 
 WICHTIG: Antworte IMMER nur mit einer Challenge, niemals mit Nachfragen oder Erklärungen.
 
-Eingaben des Users:
+Eingaben:
 - Dauer: maximal ${totalMinutes} Minuten
 - Stimmung: ${userMood}
 - Intensität: ${userIntensity}
@@ -44,34 +44,32 @@ Eingaben des Users:
 - Alter: ${userAge}
 - Ort: ${userLocation}
 
-Kategorien müssen eingehalten werden:
-- Fitness = körperliche Übung
-- Mobility = Bewegung, Stretching, Balance
-- Mind = mentale Übung, Fokus
-- Creative = etwas erschaffen oder gestalten
-- Digital = digitale Aktivität (Smartphone/PC)
-- Social = Interaktion mit anderen (auch online)
-- Self-Care = sich um sich selbst kümmern
-- Nature = Naturbezug (nur Outside)
-- Mission = kleine Aufgabe oder Auftrag
-- Learning = Wissen aneignen oder üben
-- None = freie Wahl
-
-Regeln:
-1. Die Challenge darf die Zeit nicht überschreiten (${totalMinutes} Minuten).
-2. Die Kategorie ${userCategories} MUSS eingehalten werden.
-3. Das Ziel ${userGoal} MUSS berücksichtigt werden (z. B. Learning = etwas Neues lernen).
-4. Stimmung und Intensität bestimmen, wie aktiv die Aufgabe ist (Sad + Medium = leicht, positiv, machbar).
-5. Einschränkungen ("Disability Impact") berücksichtigen → Mild = nur leicht angepasst.
-6. Ort und Personenanzahl MÜSSEN beachtet werden.
-7. Keine Atem- oder Visualisierungsübungen, außer Kategorie = "Mind".
-8. Antworte NUR mit einem Satz für die Challenge.
+Feste Regeln:
+1. Die Challenge MUSS in ${totalMinutes} Minuten machbar sein (nicht länger, nicht kürzer als 1 Minute).
+2. Die Kategorie MUSS exakt eingehalten werden:
+   - Mobility = Bewegungsaufgabe (Stretching, leichte Aktivität, Balance).
+   - Fitness = Training.
+   - Mind = mentale Übung.
+   - Creative = kreatives Gestalten.
+   - Digital = digitale Aktivität.
+   - Social = Interaktion.
+   - Self-Care = Pflege, Erholung.
+   - Nature = Bezug zur Natur.
+   - Mission = kleine konkrete Aufgabe.
+   - Learning = etwas Neues lernen.
+   - None = freie Wahl.
+3. Das Ziel ${userGoal} MUSS berücksichtigt werden (Relaxation = beruhigende, entspannende Variante).
+4. Stimmung + Intensität bestimmen die Ausprägung (Neutral + Medium = moderat, nicht zu leicht, nicht zu schwer).
+5. Ort & Personenanzahl sind verpflichtend (Outside + Group = draußen in einer Gruppe).
+6. KEINE Atemübungen oder reinen Denkaufgaben, wenn Kategorie ≠ "Mind".
+7. Antworte nur mit EINEM klaren Satz für die Challenge.
 
 Beispiele:
-- Mood=Sad, Intensity=Medium, Category=Learning, Time=10min, Outside → "Gehe 10 Minuten nach draußen und lerne dabei fünf neue Wörter einer Fremdsprache, indem du sie laut aussprichst."
-- Mood=Happy, Intensity=High, Category=Fitness, Time=15min, Inside → "Mach 3 Runden á 10 Kniebeugen, 10 Liegestütze und 10 Hampelmänner."
-- Mood=Neutral, Intensity=Low, Category=Creative, Time=5min, Inside → "Zeichne 5 Minuten lang ein Bild nur mit Kreisen."
+- Mood=Neutral, Intensity=Medium, Category=Mobility, Goal=Relaxation, Time=10min, Outside, Group → "Trefft euch draußen im Kreis und macht gemeinsam 10 Minuten lang sanfte Dehnübungen im Stehen."
+- Mood=Happy, Intensity=High, Category=Fitness, Time=15min, Inside → "Macht 3 Runden á 10 Liegestütze, 10 Sit-ups und 10 Hampelmänner."
+- Mood=Sad, Intensity=Low, Category=Self-Care, Time=5min, Inside → "Setz dich bequem hin und höre für 5 Minuten beruhigende Musik."
 `;
+
 
 
     const response = await client.chat.completions.create({
