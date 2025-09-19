@@ -1,5 +1,3 @@
-// pages/api/challenge.js
-
 import OpenAI from "openai";
 
 export default async function handler(req, res) {
@@ -8,20 +6,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Allowed values for validation
-    const allowedValues = {
-      userMood: ["Happy", "Sad", "Mad", "Energetic", "Neutral"],
-      userIntensity: ["Low", "Medium", "High", "Very High"],
-      userDisabilityImpact: ["None", "Mild", "Moderate", "Severe", "Complex"],
-      userCategories: ["Fitness", "Mobility", "Mind", "Creative", "Digital", "Social", "Self-Care", "Nature", "Mission", "None"],
-      userGoal: ["None", "Social", "Learning", "Fitness", "Fun", "Relaxation"],
-      userPersons: ["Solo", "Duo", "Squad", "Team", "Group", "No Limit"],
-      userAge: ["13-15", "16-17", "18-24", "25-34", "35+", "Any"],
-      userLocation: ["Inside", "Outside", "Any"]
-    };
-
-    // Extract values with fallback
-    let {
+    // Werte aus Request Body
+    const {
       userMood = "Neutral",
       userIntensity = "Medium",
       userDisabilityImpact = "None",
@@ -34,32 +20,14 @@ export default async function handler(req, res) {
       userMinutes = 0
     } = req.body;
 
-    // Validate inputs: if not allowed, set fallback
-    function validate(value, key) {
-      if (allowedValues[key] && allowedValues[key].includes(value)) {
-        return value;
-      }
-      return allowedValues[key] ? allowedValues[key][0] : value;
-    }
+    // Zeitlimit berechnen
+    const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
 
-    userMood = validate(userMood, "userMood");
-    userIntensity = validate(userIntensity, "userIntensity");
-    userDisabilityImpact = validate(userDisabilityImpact, "userDisabilityImpact");
-    userCategories = validate(userCategories, "userCategories");
-    userGoal = validate(userGoal, "userGoal");
-    userPersons = validate(userPersons, "userPersons");
-    userAge = validate(userAge, "userAge");
-    userLocation = validate(userLocation, "userLocation");
-
-    // Numbers safe parse
-    userHours = parseInt(userHours) || 0;
-    userMinutes = parseInt(userMinutes) || 0;
-
-    const totalMinutes = userHours * 60 + userMinutes;
-
-    // Build dynamic prompt (skip "None")
+    // Prompt bauen
     const prompt = `
-Create a creative, short and doable challenge based on these inputs:
+You are a creative challenge generator. Always follow these strict rules:
+
+Inputs for the challenge:
 ${userMood !== "None" ? `- Mood: ${userMood}` : ""}
 ${userIntensity !== "None" ? `- Intensity: ${userIntensity}` : ""}
 ${userDisabilityImpact !== "None" ? `- Disability Impact: ${userDisabilityImpact}` : ""}
@@ -71,34 +39,32 @@ ${userLocation !== "None" ? `- Location: ${userLocation}` : ""}
 - Time Limit: ${totalMinutes} minutes
 
 Rules:
-- The challenge must always be possible to complete in the given time.
-- Respond ONLY with the challenge text.
-- Do not include keys like {challenge: ...}, no JSON, no labels.
-- If inputs are minimal or vague, still create a valid challenge.
-    `.trim();
+1. ALWAYS respect the time limit: the entire challenge must be fully doable within ${totalMinutes} minutes (not longer).
+2. ALWAYS consider all inputs above. If an input is "None", treat it as "no specific restriction".
+3. The output must be ONE clear, creative challenge that matches the given context.
+4. Do not explain yourself, do not repeat the inputs.
+5. Output ONLY the challenge text, nothing else (no JSON, no labels, no keys).
+`.trim();
 
+    // OpenAI-Client
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // Anfrage an GPT
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: "You are a creative challenge generator. Always output only the challenge text." },
+        {
+          role: "system",
+          content:
+            "You are a creative challenge generator. Respond only with the challenge text itself."
+        },
         { role: "user", content: prompt }
       ],
       max_tokens: 250,
-      temperature: 0.8,
-      top_p: 0.95
+      temperature: 0.9
     });
 
-    let challengeText = response.choices[0]?.message?.content?.trim() || "";
-
-    // Cleanup: remove unwanted prefixes like {challenge: ...}
-    challengeText = challengeText.replace(/^{?challenge:?\s*/i, "").replace(/^\{?["']?challenge["']?\s*:\s*/i, "").trim();
-
-    // Fallback if empty
-    if (!challengeText) {
-      challengeText = "Take a deep breath and smile right now.";
-    }
+    const challengeText = response.choices[0].message.content.trim();
 
     res.status(200).json({ challenge: challengeText });
   } catch (error) {
