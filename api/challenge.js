@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Werte aus dem Body auslesen mit Default-Werten
+    // Werte aus dem Body auslesen mit Defaults
     const {
       userMood = "Neutral",
       userIntensity = "Medium",
@@ -23,26 +23,32 @@ export default async function handler(req, res) {
     // Zeitlimit in Minuten berechnen
     const totalMinutes = parseInt(userHours) * 60 + parseInt(userMinutes);
 
-    // Prompt bauen, None-Werte ignorieren, Location beachten
+    // Prompt zusammenbauen, None/Any-Werte sauber ignorieren
+    const promptLines = [];
+    if (userMood !== "None") promptLines.push(`- Mood: ${userMood}`);
+    if (userIntensity !== "None") promptLines.push(`- Intensity: ${userIntensity}`);
+    if (userDisabilityImpact !== "None") promptLines.push(`- Disability Impact: ${userDisabilityImpact}`);
+    if (userCategories !== "None") promptLines.push(`- Category: ${userCategories}`);
+    if (userGoal !== "None") promptLines.push(`- Goal: ${userGoal}`);
+    if (userPersons !== "None") promptLines.push(`- Participants: ${userPersons}`);
+    if (userAge !== "Any") promptLines.push(`- Age: ${userAge}`);
+    if (userLocation !== "Any") promptLines.push(`- Location: ${userLocation}`);
+    promptLines.push(`- Duration: ${totalMinutes} minutes`);
+
     const prompt = `
-Create a single, short challenge based on the following inputs:
-${userMood !== "None" ? `- Mood: ${userMood}` : ""}
-${userIntensity !== "None" ? `- Intensity: ${userIntensity}` : ""}
-${userDisabilityImpact !== "None" ? `- Disability Impact: ${userDisabilityImpact}` : ""}
-${userCategories !== "None" ? `- Category: ${userCategories}` : ""}
-${userGoal !== "None" ? `- Goal: ${userGoal}` : ""}
-${userPersons !== "None" ? `- Participants: ${userPersons}` : ""}
-${userAge !== "Any" ? `- Age: ${userAge}` : ""}
-${userLocation !== "Any" ? `- Location: ${userLocation}` : ""}
-- Duration: ${totalMinutes} minutes
+Create a single, short, realistic challenge based on the following inputs:
+${promptLines.join("\n")}
 
 Important:
 - Only create a challenge that can realistically be completed within the given duration and location.
-- Respond **directly with the challenge text only**, no extra labels or formatting.
+- Reply **only with the challenge text**, no JSON, no labels, no extra formatting.
+- Keep it concise, clear, and actionable.
 `;
 
+    // OpenAI-Client initialisieren
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // Chat Completion anfordern
     const response = await client.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -53,6 +59,7 @@ Important:
       temperature: 0.9
     });
 
+    // Challenge aus der Antwort extrahieren
     const challengeText = response.choices[0].message.content.trim();
 
     res.status(200).json({ challenge: challengeText });
