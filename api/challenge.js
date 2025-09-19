@@ -1,26 +1,27 @@
 import OpenAI from "openai";
 
 export default async function handler(req, res) {
-  try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Only POST allowed" });
-    }
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Only POST allowed" });
+  }
 
+  try {
     const {
-      userMood,
-      userIntensity,
-      userDisabilityImpact,
-      userCategories,
-      userGoal,
-      userPersons,
-      userAge,
-      userLocation,
-      userHours,
-      userMinutes
+      userMood = "Neutral",
+      userIntensity = "Medium",
+      userDisabilityImpact = "None",
+      userCategories = "None",
+      userGoal = "None",
+      userPersons = "Solo",
+      userAge = "Any",
+      userLocation = "Any",
+      userHours = 0,
+      userMinutes = 0
     } = req.body;
 
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+    // GPT-Prompt
     const prompt = `
 Du bist ein kreativer Challenge-Generator. Erstelle eine Aufgabe basierend auf den folgenden Angaben:
 
@@ -35,9 +36,9 @@ Du bist ein kreativer Challenge-Generator. Erstelle eine Aufgabe basierend auf d
 - Zeitlimit: ${userHours}h ${userMinutes}min
 
 ⚠️ WICHTIG:
-- Wenn ein Wert "None" oder "Any" ist, ignoriere ihn und wähle einen neutralen oder allgemeinen Wert.
-- Aufgabe muss innerhalb der angegebenen Zeit machbar sein.
-- Antworte nur mit der Aufgabe, keine Einleitung, keine Extra-Texte.
+- Wenn ein Wert "None" oder "Any" ist, ignoriere ihn nicht als Fehler, sondern wähle ein neutrales, offenes Ziel oder Konzept.
+- Die Aufgabe muss innerhalb der angegebenen Zeit machbar sein.
+- Antworte nur mit der Aufgabe, keine Einleitung oder Extra-Texte.
 - Kurz, klar, realistisch.
 `;
 
@@ -47,16 +48,15 @@ Du bist ein kreativer Challenge-Generator. Erstelle eine Aufgabe basierend auf d
         { role: "system", content: "Du bist ein kreativer Challenge-Generator." },
         { role: "user", content: prompt }
       ],
-      max_tokens: 200,
+      max_tokens: 250,
       temperature: 0.9
     });
 
-    const challengeText = response.choices[0].message.content;
+    const challengeText = response.choices?.[0]?.message?.content || "⚠️ Keine Antwort von GPT";
 
     res.status(200).json({ challenge: challengeText });
-
   } catch (error) {
-    console.error("Error:", error);
+    console.error(error);
     res.status(500).json({ error: "Server error" });
   }
 }
