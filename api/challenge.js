@@ -1,11 +1,6 @@
 import OpenAI from "openai";
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // Key bleibt sicher auf Server
-});
-
-// Dein geheimes Token, das FlutterFlow mitsendet
-const SECRET_TOKEN = process.env.MY_SECRET_TOKEN;
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -13,16 +8,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { token, ...userInputs } = req.body;
-
-    // 🔒 Token prüfen
-    if (!token || token !== SECRET_TOKEN) {
-      return res.status(403).json({ error: "Unauthorized request" });
-    }
-
-    // Debug: Eingaben loggen
-    console.log("📥 Eingaben empfangen:", userInputs);
-
     const {
       userMood,
       userIntensity,
@@ -34,28 +19,25 @@ export default async function handler(req, res) {
       userLocation,
       userHours,
       userMinutes,
-    } = userInputs;
+    } = req.body;
 
     const totalMinutes =
       (parseInt(userHours, 10) || 0) * 60 + (parseInt(userMinutes, 10) || 0);
 
+    // Minimale Beschreibung für DisabilityImpact
     const disabilityDescription = {
-      None: "Keine Einschränkungen, normale Übungen möglich.",
-      Mild: "Leichte Anpassungen nötig, leichte Variation der Intensität.",
-      Moderate: "Schonendere Versionen, wenig Sprünge.",
-      Severe: "Alle Übungen müssen sitzend oder liegend machbar sein.",
-      Complex: "Kognitive Einschränkungen: klare Schritt-für-Schritt-Anweisungen, einfache Sprache, langsames Tempo.",
-    }[userDisabilityImpact] || "Keine speziellen Anpassungen.";
+      None: "keine Einschränkungen",
+      Mild: "leichte Anpassungen",
+      Moderate: "schonendere Versionen",
+      Severe: "sitzend oder liegend, keine Belastung",
+      Complex: "klare Schritt-für-Schritt-Anweisungen"
+    }[userDisabilityImpact] || "keine speziellen Anpassungen";
 
     const prompt = `
-Du bist ein Challenge-Generator.
-Erstelle genau EINE Challenge, die zu den Eingaben passt.
-Berücksichtige jede Eingabe.
-
-Eingaben:
+Erstelle eine Challenge basierend auf:
 - Stimmung: ${userMood}
 - Intensität: ${userIntensity}
-- Einschränkungen: ${userDisabilityImpact} (${disabilityDescription})
+- Einschränkungen: ${disabilityDescription}
 - Kategorie: ${userCategories}
 - Ziel: ${userGoal}
 - Personenanzahl: ${userPersons}
@@ -63,15 +45,7 @@ Eingaben:
 - Ort: ${userLocation}
 - Dauer: ${totalMinutes} Minuten
 
-Regeln:
-1. Die Challenge dauert exakt ${totalMinutes} Minuten.
-2. Benutze genau die Kategorie ${userCategories}.
-3. Die Personenanzahl ist ${userPersons}. Passe die Aufgabe daran an.
-4. Berücksichtige die Einschränkungen (${userDisabilityImpact}) entsprechend.
-5. Intensität ${userIntensity} muss klar spürbar sein.
-6. Ort (${userLocation}) berücksichtigen.
-7. Stimmung (${userMood}) soll erkennbar sein.
-8. Antworte nur im Format: {challenge: "..."}
+Antwort nur so: {challenge: "..."}
 `;
 
     const completion = await client.chat.completions.create({
@@ -80,13 +54,9 @@ Regeln:
       temperature: 0.7,
     });
 
-    const challengeText = completion.choices[0].message.content;
-
-    console.log("✅ GPT Antwort:", challengeText);
-
-    return res.status(200).json({ challenge: challengeText });
+    return res.status(200).json({ challenge: completion.choices[0].message.content });
   } catch (error) {
-    console.error("❌ Fehler im Handler:", error);
+    console.error(error);
     return res.status(500).json({ error: "Server error", details: error.message });
   }
 }
