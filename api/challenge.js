@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       userMinutes,
     } = req.body;
 
-    // Debug: Ausgabe ins Log
+    // Debug: Eingaben loggen
     console.log("📥 Eingaben empfangen:", {
       userMood,
       userIntensity,
@@ -39,11 +39,16 @@ export default async function handler(req, res) {
     });
 
     // Dauer berechnen
-    const totalMinutes =
+    let totalMinutes =
       (parseInt(userHours, 10) || 0) * 60 + (parseInt(userMinutes, 10) || 0);
+
+    if (totalMinutes <= 0) {
+      totalMinutes = 15; // Fallback falls Eingabe leer oder 0
+    }
 
     console.log("⏱️ Berechnete Dauer (Minuten):", totalMinutes);
 
+    // Prompt bauen
     const prompt = `
 Du bist ein Challenge-Generator. 
 Erstelle GENAU EINE Challenge, die zu den Eingaben passt. 
@@ -68,9 +73,16 @@ Regeln:
 5. Intensität ${userIntensity} muss klar spürbar sein.
 6. Ort (${userLocation}) muss berücksichtigt werden.
 7. Stimmung (${userMood}) soll in der Formulierung erkennbar sein.
-8. Antworte nur im Format:
-{challenge: "…"}
+8. Antworte ausschließlich im Format:
+
+{
+  "challenge": "Die Challenge in natürlicher Sprache..."
+}
+
+KEINE weiteren Erklärungen, KEINE zusätzlichen Felder.
 `;
+
+    console.log("📝 Prompt:", prompt);
 
     // GPT Call
     const completion = await client.chat.completions.create({
@@ -79,11 +91,25 @@ Regeln:
       temperature: 0.7,
     });
 
-    const challengeText = completion.choices[0].message.content;
+    console.log("🔍 Raw GPT Output:", completion);
 
-    console.log("✅ GPT Antwort:", challengeText);
+    let challengeText = completion.choices[0].message.content.trim();
 
-    return res.status(200).json({ challenge: challengeText });
+    // Falls GPT ```json oder ``` zurückgibt → rausfiltern
+    challengeText = challengeText.replace(/```json|```/g, "").trim();
+
+    // Versuchen, JSON zu parsen
+    let challengeObj;
+    try {
+      challengeObj = JSON.parse(challengeText);
+    } catch (err) {
+      console.warn("⚠️ Antwort war kein gültiges JSON. Verwende als Fallback String:", challengeText);
+      challengeObj = { challenge: challengeText };
+    }
+
+    console.log("✅ Final Challenge:", challengeObj);
+
+    return res.status(200).json(challengeObj);
   } catch (error) {
     console.error("❌ Fehler im Handler:", error);
     return res.status(500).json({ error: "Server error", details: error.message });
